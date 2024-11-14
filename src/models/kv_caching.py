@@ -8,10 +8,7 @@ class Cache:
     def __init__(self, num_samples: int, num_heads: int, max_tokens: int, embed_dim: int, device: torch.device) -> None:
         assert embed_dim % num_heads == 0
         self._n, self._cache, self._size = num_samples, None, None
-<<<<<<< HEAD
-=======
         # 一个匿名函数（lambda function），它接收一个参数 n。n 通常表示批次大小（Batch Size）。
->>>>>>> remotecopy
         self._reset = lambda n: torch.empty(n, num_heads, max_tokens, embed_dim // num_heads, device=device)  # (B, nh, T, hs)
         self.reset()
 
@@ -21,14 +18,6 @@ class Cache:
         return n, num_heads, self._size, head_dim
 
     def reset(self) -> None:
-<<<<<<< HEAD
-        self._cache = self._reset(self._n)
-        self._size = 0
-
-    def prune(self, mask: np.ndarray) -> None:
-        assert mask.ndim == 1 and mask.shape[0] == self.shape[0]
-        self._cache = self._cache[mask]
-=======
         # 使用 _reset 函数生成新的空缓存张量，并赋值给 _cache
         self._cache = self._reset(self._n)
         # 将 _size 设置为 0，表示缓存还没有存储任何信息
@@ -40,20 +29,15 @@ class Cache:
         assert mask.ndim == 1 and mask.shape[0] == self.shape[0]
         self._cache = self._cache[mask]
         # 裁剪后的缓存中样本的数量
->>>>>>> remotecopy
         self._n = self._cache.shape[0]
 
     def get(self) -> torch.Tensor:
         return self._cache[:, :, :self._size, :]
 
     def update(self, x: torch.Tensor) -> None:
-<<<<<<< HEAD
-        assert (x.ndim == self._cache.ndim) and all([x.size(i) == self._cache.size(i) for i in (0, 1, 3)])
-=======
         # 是确保新输入张量的形状和缓存匹配，除时间步维度
         assert (x.ndim == self._cache.ndim) and all([x.size(i) == self._cache.size(i) for i in (0, 1, 3)])
         # 确保添加新的张量后，缓存的大小不会超出最大限制。
->>>>>>> remotecopy
         assert self._size + x.size(2) <= self._cache.shape[2]
         self._cache = AssignWithoutInplaceCheck.apply(self._cache, x, 2, self._size, self._size + x.size(2))
         self._size += x.size(2)
@@ -66,10 +50,7 @@ class KVCache:
 
     @property
     def shape(self) -> Tuple[int, int, int, int]:
-<<<<<<< HEAD
-=======
         # 获得缓存的形状
->>>>>>> remotecopy
         return self._k_cache.shape
 
     def reset(self) -> None:
@@ -89,14 +70,6 @@ class KVCache:
 
 
 class KeysValues:
-<<<<<<< HEAD
-    def __init__(self, n: int, num_heads: int, max_tokens: int, embed_dim: int, num_layers: int, device: torch.device) -> None:
-        self._keys_values = tuple([KVCache(n, num_heads, max_tokens, embed_dim, device) for _ in range(num_layers)])
-
-    def __getitem__(self, key: int) -> KVCache:
-        return self._keys_values[key]
-
-=======
     '''
     n：表示批量大小。
     num_heads：表示 Transformer 中的注意力头的数量。
@@ -114,31 +87,21 @@ class KeysValues:
         return self._keys_values[key]
 
     # 可以使用 len(kv) 来获取缓存的层数
->>>>>>> remotecopy
     def __len__(self):
         return len(self._keys_values)
 
     @property
     def size(self):
-<<<<<<< HEAD
-        return self._keys_values[0].shape[2]
-
-    def reset(self) -> None:
-=======
         # 返回键值缓存中每层的时间步数
         return self._keys_values[0].shape[2]
 
     def reset(self) -> None:
         # 重置每个 KVCache 对象，通常用于清空缓存中的键和值。
->>>>>>> remotecopy
         for kv_cache in self._keys_values:
             kv_cache.reset()
 
     def prune(self, mask: np.ndarray) -> None:
-<<<<<<< HEAD
-=======
         # 对每个 KVCache 进行剪枝，通常用于选择性地保留某些缓存条目。
->>>>>>> remotecopy
         for kv_cache in self._keys_values:
             kv_cache.prune(mask)
 
@@ -147,30 +110,12 @@ class AssignWithoutInplaceCheck(torch.autograd.Function):
     """
     Inspired from : https://discuss.pytorch.org/t/disable-in-place-correctness-version-check-any-other-workaround/90738/4
     Warning : do not use it to overwrite a slice twice.
-<<<<<<< HEAD
-=======
 
     AssignWithoutInplaceCheck 继承自 torch.autograd.Function，用于实现自定义的前向和反向传播
->>>>>>> remotecopy
     """
 
     @staticmethod
     def get_slice(dim: int, start: int, stop: int) -> Tuple[slice]:
-<<<<<<< HEAD
-        return tuple([slice(None), ] * dim + [slice(start, stop)])
-
-    @staticmethod
-    def forward(ctx, input: torch.Tensor, value: torch.Tensor, dim: int, start: int, stop: int) -> torch.Tensor:
-        ctx.dim = dim
-        ctx.start = start
-        ctx.stop = stop
-        input.data[AssignWithoutInplaceCheck.get_slice(dim, start, stop)] = value
-        return input
-
-    @staticmethod
-    def backward(ctx, grad_out: torch.Tensor) -> Tuple[torch.Tensor]:
-        return grad_out, grad_out[AssignWithoutInplaceCheck.get_slice(ctx.dim, ctx.start, ctx.stop)], None, None, None
-=======
         # slice(None) 等价于 [:]，表示选择所有元素
         return tuple([slice(None), ] * dim + [slice(start, stop)])
 
@@ -206,4 +151,3 @@ class AssignWithoutInplaceCheck(torch.autograd.Function):
 对于反向传播来说，这意味着损失对 input 的偏导数并不受到赋值操作的影响。实际上，赋值操作只是更改了 input 的某部分的值，其他部分保持不变。
 因此，损失函数对 input 的导数直接等于 grad_out，因为 grad_out 本身就是从损失对 input 的梯度，不需要再进行额外的处理。
 '''
->>>>>>> remotecopy
