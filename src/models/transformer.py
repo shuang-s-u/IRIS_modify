@@ -16,25 +16,6 @@ from .kv_caching import KeysValues, KVCache
 
 @dataclass
 class TransformerConfig:
-<<<<<<< HEAD
-    tokens_per_block: int
-    max_blocks: int
-    attention: str
-
-    num_layers: int
-    num_heads: int
-    embed_dim: int
-
-    embed_pdrop: float
-    resid_pdrop: float
-    attn_pdrop: float
-
-    @property
-    def max_tokens(self):
-        return self.tokens_per_block * self.max_blocks
-
-
-=======
     # 每个块可以处理的token数量
     tokens_per_block: int
     # 表示transformer中最大块数量，这决定了transformer的结构中有多少块可以使用
@@ -64,18 +45,10 @@ class TransformerConfig:
 '''
 实现了一个典型的 Transformer 模型的结构，包含多个 Block 层、Dropout 和层归一化。
 '''
->>>>>>> remotecopy
 class Transformer(nn.Module):
     def __init__(self, config: TransformerConfig) -> None:
         super().__init__()
         self.config = config
-<<<<<<< HEAD
-        self.drop = nn.Dropout(config.embed_pdrop)
-        self.blocks = nn.ModuleList([Block(config) for _ in range(config.num_layers)])
-        self.ln_f = nn.LayerNorm(config.embed_dim)
-
-    def generate_empty_keys_values(self, n: int, max_tokens: int) -> KeysValues:
-=======
         # 定义一个 nn.Dropout 层，丢弃率为 config.embed_pdrop，用于防止过拟合。
         # Dropout 是一种正则化技术，通过在训练过程中随机将一部分神经元的输出设置为 0，以减少模型对某些节点的依赖。
         self.drop = nn.Dropout(config.embed_pdrop)
@@ -88,18 +61,10 @@ class Transformer(nn.Module):
     # 参数 n 表示批次大小，max_tokens 表示最大 token 数。
     def generate_empty_keys_values(self, n: int, max_tokens: int) -> KeysValues:
         # 用于获取模型所在的设备（CPU 或 GPU），假设所有子模块都在相同设备上。
->>>>>>> remotecopy
         device = self.ln_f.weight.device  # Assumption that all submodules are on the same device
         return KeysValues(n, self.config.num_heads, max_tokens, self.config.embed_dim, self.config.num_layers, device)
 
     def forward(self, sequences: torch.Tensor, past_keys_values: Optional[KeysValues] = None) -> torch.Tensor:
-<<<<<<< HEAD
-        assert past_keys_values is None or len(past_keys_values) == len(self.blocks)
-        x = self.drop(sequences)
-        for i, block in enumerate(self.blocks):
-            x = block(x, None if past_keys_values is None else past_keys_values[i])
-
-=======
         # 确保 past_keys_values 的形状与模型中的层数一致
         assert past_keys_values is None or len(past_keys_values) == len(self.blocks)
         x = self.drop(sequences)
@@ -108,7 +73,6 @@ class Transformer(nn.Module):
             x = block(x, None if past_keys_values is None else past_keys_values[i])
 
         # 归一化
->>>>>>> remotecopy
         x = self.ln_f(x)
         return x
 
@@ -116,13 +80,6 @@ class Transformer(nn.Module):
 class Block(nn.Module):
     def __init__(self, config: TransformerConfig) -> None:
         super().__init__()
-<<<<<<< HEAD
-        self.ln1 = nn.LayerNorm(config.embed_dim)
-        self.ln2 = nn.LayerNorm(config.embed_dim)
-        self.attn = SelfAttention(config)
-        self.mlp = nn.Sequential(
-            nn.Linear(config.embed_dim, 4 * config.embed_dim),
-=======
         # 定义两个嵌入维度为config.embed_dim的归一化层
         self.ln1 = nn.LayerNorm(config.embed_dim)
         self.ln2 = nn.LayerNorm(config.embed_dim)
@@ -132,49 +89,20 @@ class Block(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(config.embed_dim, 4 * config.embed_dim),
             # 激活函数，GELU（Gaussian Error Linear Unit），它在深度学习中比 ReLU 更常用，用于增强模型的非线性表示能力。
->>>>>>> remotecopy
             nn.GELU(),
             nn.Linear(4 * config.embed_dim, config.embed_dim),
             nn.Dropout(config.resid_pdrop),
         )
 
     def forward(self, x: torch.Tensor, past_keys_values: Optional[KeysValues] = None) -> torch.Tensor:
-<<<<<<< HEAD
-        x_attn = self.attn(self.ln1(x), past_keys_values)
-=======
         # 进行层归一化（self.ln1(x)），然后将归一化后的结果传入自注意力层 self.attn（B，T，C）
         x_attn = self.attn(self.ln1(x), past_keys_values)
         # 使用残差连接，将自注意力层的输出 (x_attn) 加到原始输入 (x) 上。
         # 残差连接的作用是防止梯度消失，帮助模型训练更深的网络。
->>>>>>> remotecopy
         x = x + x_attn
         x = x + self.mlp(self.ln2(x))
         return x
 
-<<<<<<< HEAD
-
-class SelfAttention(nn.Module):
-    def __init__(self, config: TransformerConfig) -> None:
-        super().__init__()
-        assert config.embed_dim % config.num_heads == 0
-        assert config.attention in ('causal', 'block_causal')
-        self.num_heads = config.num_heads
-        self.key = nn.Linear(config.embed_dim, config.embed_dim)
-        self.query = nn.Linear(config.embed_dim, config.embed_dim)
-        self.value = nn.Linear(config.embed_dim, config.embed_dim)
-        self.attn_drop = nn.Dropout(config.attn_pdrop)
-        self.resid_drop = nn.Dropout(config.resid_pdrop)
-        self.proj = nn.Linear(config.embed_dim, config.embed_dim)
-
-        causal_mask = torch.tril(torch.ones(config.max_tokens, config.max_tokens))
-        block_causal_mask = torch.max(causal_mask, torch.block_diag(*[torch.ones(config.tokens_per_block, config.tokens_per_block) for _ in range(config.max_blocks)]))
-        self.register_buffer('mask', causal_mask if config.attention == 'causal' else block_causal_mask)
-
-    def forward(self, x: torch.Tensor, kv_cache: Optional[KVCache] = None) -> torch.Tensor:
-        B, T, C = x.size()
-        if kv_cache is not None:
-            b, nh, L, c = kv_cache.shape
-=======
 '''
 定义了一个名为 SelfAttention 的类，用于实现 Transformer 模型中的自注意力机制。
 自注意力是 Transformer 模型的核心部分，用于捕捉输入序列中每个位置之间的依赖关系。
@@ -218,33 +146,16 @@ class SelfAttention(nn.Module):
             '''
             b, nh, L, c = kv_cache.shape
             # 检查kv_cache的形状是否与输入匹配
->>>>>>> remotecopy
             assert nh == self.num_heads and b == B and c * nh == C
         else:
             L = 0
 
-<<<<<<< HEAD
-=======
         # 使用三个线性变换（query、key 和 value）生成查询向量 q、键向量 k 和值向量 v。
         # (B, nh, T, hs) (批次，头大小，序列长度，每个头的嵌入维度)
->>>>>>> remotecopy
         q = self.query(x).view(B, T, self.num_heads, C // self.num_heads).transpose(1, 2)   # (B, nh, T, hs)
         k = self.key(x).view(B, T, self.num_heads, C // self.num_heads).transpose(1, 2)     # (B, nh, T, hs)
         v = self.value(x).view(B, T, self.num_heads, C // self.num_heads).transpose(1, 2)   # (B, nh, T, hs)
 
-<<<<<<< HEAD
-        if kv_cache is not None:
-            kv_cache.update(k, v)
-            k, v = kv_cache.get()
-
-        att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-        att = att.masked_fill(self.mask[L:L + T, :L + T] == 0, float('-inf'))
-        att = F.softmax(att, dim=-1)
-        att = self.attn_drop(att)
-        y = att @ v
-        y = rearrange(y, 'b h t e -> b t (h e)')
-
-=======
         # 更新键和值的缓存
         if kv_cache is not None:
             kv_cache.update(k, v)
@@ -271,7 +182,6 @@ class SelfAttention(nn.Module):
         y = rearrange(y, 'b h t e -> b t (h e)')
         # 使用一个线性层 proj 对上下文向量 y 进行投影，目的是将拼接后的多头上下文向量重新映射回原始的嵌入维度。
         # 最终输出的 y 形状为 (B, T, C)
->>>>>>> remotecopy
         y = self.resid_drop(self.proj(y))
 
         return y
