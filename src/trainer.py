@@ -5,6 +5,14 @@ import shutil
 import sys
 import time
 from typing import Any, Dict, Optional, Tuple
+<<<<<<< HEAD
+=======
+# 
+from datetime import datetime
+import os
+
+#
+>>>>>>> remotecopy
 
 import hydra
 from hydra.utils import instantiate
@@ -18,6 +26,10 @@ from agent import Agent
 from collector import Collector
 from envs import SingleProcessEnv, MultiProcessEnv
 from episode import Episode
+<<<<<<< HEAD
+=======
+
+>>>>>>> remotecopy
 from make_reconstructions import make_reconstructions_from_batch
 from models.actor_critic import ActorCritic
 from models.world_model import WorldModel
@@ -44,6 +56,12 @@ class Trainer:
         self.media_dir = Path('media')
         self.episode_dir = self.media_dir / 'episodes'
         self.reconstructions_dir = self.media_dir / 'reconstructions'
+<<<<<<< HEAD
+=======
+        #
+        self.results_dir = Path('results')
+        #
+>>>>>>> remotecopy
 
         if not cfg.common.resume:
             config_dir = Path('config')
@@ -118,12 +136,40 @@ class Trainer:
             if self.cfg.training.should:
                 self.save_checkpoint(epoch, save_agent_only=not self.cfg.common.do_checkpoint)
 
+<<<<<<< HEAD
             to_log.append({'duration': (time.time() - start_time) / 3600})
             for metrics in to_log:
                 wandb.log({'epoch': epoch, **metrics})
 
         self.finish()
 
+=======
+            # 单位：h
+            to_log.append({'duration': (time.time() - start_time) / 3600})
+            # for metrics in to_log:
+            #     wandb.log({'epoch': epoch, **metrics})
+            self.save_results_to_file(to_log, epoch)
+
+        self.finish()
+
+    # todo：将保存到wandb上的数据转到local
+    # 创建保存结果的函数
+    def save_results_to_file(self, to_log, epoch: int):
+        # 获取当前日期和时间
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        os.makedirs(self.results_dir , exist_ok=True)  # 如果 results_ 文件夹不存在，则创建它
+        # 定义文件名和路径，确保保存到 IRIS-MAIN 根目录下
+        file_name = f"log_output_{timestamp}_epoch_{epoch}.txt"
+        file_path = os.path.join(self.results_dir , file_name)
+        
+        # 保存日志数据到文件
+        with open(file_path, 'w') as f:
+            for metrics in to_log:
+                # print('write metrics to local txt')
+                f.write(f"Epoch {epoch}: {metrics}\n")
+
+
+>>>>>>> remotecopy
     def train_agent(self, epoch: int) -> None:
         self.agent.train()
         self.agent.zero_grad()

@@ -31,6 +31,11 @@ class Agent(nn.Module):
             self.actor_critic.load_state_dict(extract_state_dict(agent_state_dict, 'actor_critic'))
 
     def act(self, obs: torch.FloatTensor, should_sample: bool = True, temperature: float = 1.0) -> torch.LongTensor:
+<<<<<<< HEAD
+=======
+        # 在这里设置断点
+        # import pdb; pdb.set_trace()
+>>>>>>> remotecopy
         input_ac = obs if self.actor_critic.use_original_obs else torch.clamp(self.tokenizer.encode_decode(obs, should_preprocess=True, should_postprocess=True), 0, 1)
         logits_actions = self.actor_critic(input_ac).logits_actions[:, -1] / temperature
         act_token = Categorical(logits=logits_actions).sample() if should_sample else logits_actions.argmax(dim=-1)

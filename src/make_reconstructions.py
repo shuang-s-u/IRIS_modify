@@ -8,12 +8,21 @@ import torch
 def make_reconstructions_from_batch(batch, save_dir, epoch, tokenizer):
     check_batch(batch)
 
+<<<<<<< HEAD
+=======
+    # 将 PyTorch 张量转换为 NumPy 数组，以便使用 PIL 进行图像操作
+>>>>>>> remotecopy
     original_frames = tensor_to_np_frames(rearrange(batch['observations'], 'b t c h w -> b t h w c'))
     all = [original_frames]
 
     rec_frames = generate_reconstructions_with_tokenizer(batch, tokenizer)
     all.append(rec_frames)
 
+<<<<<<< HEAD
+=======
+    # np.concatenate((original_frames, rec_frames), axis=-2)：沿着宽度方向拼接原始和重建的图像（使原始图像和重建图像并排放在一起）
+    # 
+>>>>>>> remotecopy
     for i, image in enumerate(map(Image.fromarray, np.concatenate(list(np.concatenate((original_frames, rec_frames), axis=-2)), axis=-3))):
         image.save(save_dir / f'epoch_{epoch:03d}_t_{i:03d}.png')
 
@@ -49,5 +58,10 @@ def generate_reconstructions_with_tokenizer(batch, tokenizer):
 @torch.no_grad()
 def reconstruct_through_tokenizer(inputs, tokenizer):
     check_float_btw_0_1(inputs)
+<<<<<<< HEAD
+=======
+    # 在这里设置断点
+    # import pdb; pdb.set_trace()
+>>>>>>> remotecopy
     reconstructions = tokenizer.encode_decode(inputs, should_preprocess=True, should_postprocess=True)
     return torch.clamp(reconstructions, 0, 1)

@@ -33,6 +33,10 @@ class Collector:
         should_stop = lambda steps, episodes: steps >= num_steps if num_steps is not None else episodes >= num_episodes
 
         to_log = []
+<<<<<<< HEAD
+=======
+        # 记录已完成的步骤和回合数
+>>>>>>> remotecopy
         steps, episodes = 0, 0
         returns = []
         observations, actions, rewards, dones = [], [], [], []
@@ -43,6 +47,11 @@ class Collector:
             segmented_episodes = [episode.segment(start=len(episode) - burn_in, stop=len(episode), should_pad=True) for episode in current_episodes]
             mask_padding = torch.stack([episode.mask_padding for episode in segmented_episodes], dim=0).to(agent.device)
             burnin_obs = torch.stack([episode.observations for episode in segmented_episodes], dim=0).float().div(255).to(agent.device)
+<<<<<<< HEAD
+=======
+            # 在这里设置断点
+            # import pdb; pdb.set_trace()
+>>>>>>> remotecopy
             burnin_obs_rec = torch.clamp(agent.tokenizer.encode_decode(burnin_obs, should_preprocess=True, should_postprocess=True), 0, 1)
 
         agent.actor_critic.reset(n=self.env.num_envs, burnin_observations=burnin_obs_rec, mask_padding=mask_padding)
