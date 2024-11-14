@@ -19,28 +19,14 @@ from utils import compute_lambda_returns, LossWithIntermediateLosses
 
 @dataclass
 class ActorCriticOutput:
-<<<<<<< HEAD
-    logits_actions: torch.FloatTensor
-=======
     # 表示动作的原始输出分数（logits）
     logits_actions: torch.FloatTensor
     # 表示状态值函数的均值。这是用来估计当前状态的“好坏”的数值
->>>>>>> remotecopy
     means_values: torch.FloatTensor
 
 
 @dataclass
 class ImagineOutput:
-<<<<<<< HEAD
-    observations: torch.ByteTensor
-    actions: torch.LongTensor
-    logits_actions: torch.FloatTensor
-    values: torch.FloatTensor
-    rewards: torch.FloatTensor
-    ends: torch.BoolTensor
-
-
-=======
     # 观察值的张量，使用 ByteTensor，通常是表示离散化或者图像数据的较小数值
     # ByteTensor 的数据范围是 0-255
     observations: torch.ByteTensor
@@ -60,14 +46,10 @@ class ImagineOutput:
 act_vocab_size：动作的词汇表大小，表示智能体可以采取的所有不同动作的数量
 use_original_obs：布尔变量，用于决定是否使用原始观察值
 '''
->>>>>>> remotecopy
 class ActorCritic(nn.Module):
     def __init__(self, act_vocab_size, use_original_obs: bool = False) -> None:
         super().__init__()
         self.use_original_obs = use_original_obs
-<<<<<<< HEAD
-        self.conv1 = nn.Conv2d(3, 32, 3, stride=1, padding=1)
-=======
         # 这些卷积层用于提取输入观察（例如环境中的图像）的特征。
         '''
         第一层卷积层将输入通道从 3 增加到 32，然后使用最大池化层将特征图的尺寸减半。
@@ -78,7 +60,6 @@ class ActorCritic(nn.Module):
         '''
         self.conv1 = nn.Conv2d(3, 32, 3, stride=1, padding=1)
         # 池化窗口的大小为 2 x 2, 这步之后会使特征图的空间尺寸缩小一半。
->>>>>>> remotecopy
         self.maxp1 = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(32, 32, 3, stride=1, padding=1)
         self.maxp2 = nn.MaxPool2d(2, 2)
@@ -88,18 +69,12 @@ class ActorCritic(nn.Module):
         self.maxp4 = nn.MaxPool2d(2, 2)
 
         self.lstm_dim = 512
-<<<<<<< HEAD
-=======
         # LSTM（长短期记忆网络）基本单元
->>>>>>> remotecopy
         self.lstm = nn.LSTMCell(1024, self.lstm_dim)
         self.hx, self.cx = None, None
 
         self.critic_linear = nn.Linear(512, 1)
-<<<<<<< HEAD
-=======
         # 
->>>>>>> remotecopy
         self.actor_linear = nn.Linear(512, act_vocab_size)
 
     def __repr__(self) -> str:
@@ -185,11 +160,8 @@ class ActorCritic(nn.Module):
         all_ends = []
         all_observations = []
 
-<<<<<<< HEAD
-=======
         # 在这里设置断点
         import pdb; pdb.set_trace()
->>>>>>> remotecopy
         burnin_observations = torch.clamp(tokenizer.encode_decode(initial_observations[:, :-1], should_preprocess=True, should_postprocess=True), 0, 1) if initial_observations.size(1) > 1 else None
         self.reset(n=initial_observations.size(0), burnin_observations=burnin_observations, mask_padding=mask_padding[:, :-1])
 

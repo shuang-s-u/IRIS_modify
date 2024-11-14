@@ -54,11 +54,8 @@ class AgentEnv:
         assert self.obs.size() == (1, 3, 64, 64)
         original_obs = self.env.env.unwrapped.original_obs if isinstance(self.env, SingleProcessEnv) else self._to_array(self.obs)
         if self.do_reconstruction:
-<<<<<<< HEAD
-=======
             # 在这里设置断点
             # import pdb; pdb.set_trace()
->>>>>>> remotecopy
             rec = torch.clamp(self.agent.tokenizer.encode_decode(self.obs, should_preprocess=True, should_postprocess=True), 0, 1)
             rec = self._to_array(resize(rec, original_obs.shape[:2], interpolation=InterpolationMode.NEAREST))
             resized_obs = self._to_array(resize(self.obs, original_obs.shape[:2], interpolation=InterpolationMode.NEAREST))

@@ -4,25 +4,6 @@ from typing import List
 import torch
 import torch.nn as nn
 
-<<<<<<< HEAD
-
-class Slicer(nn.Module):
-    def __init__(self, max_blocks: int, block_mask: torch.Tensor) -> None:
-        super().__init__()
-        self.block_size = block_mask.size(0)
-        self.num_kept_tokens = block_mask.sum().long().item()
-        kept_indices = torch.where(block_mask)[0].repeat(max_blocks)
-        offsets = torch.arange(max_blocks).repeat_interleave(self.num_kept_tokens)
-        self.register_buffer('indices', kept_indices + block_mask.size(0) * offsets)
-
-    def compute_slice(self, num_steps: int, prev_steps: int = 0) -> torch.Tensor:
-        total_steps = num_steps + prev_steps
-        num_blocks = math.ceil(total_steps / self.block_size)
-        indices = self.indices[:num_blocks * self.num_kept_tokens]
-        return indices[torch.logical_and(prev_steps <= indices, indices < total_steps)] - prev_steps
-
-    def forward(self, *args, **kwargs):
-=======
 '''
 主要功能：Slicer 类的作用是根据给定的 block_mask 计算出模型前向传播时需要处理的 token 索引。
 它根据最大块数（max_blocks）和掩码（block_mask）来动态调整输入 token 的索引位置，使得模型可以有选择性地处理某些 token，而不必处理全部 token。
@@ -61,50 +42,23 @@ class Slicer(nn.Module):
 
     def forward(self, *args, **kwargs):
         # 这表明 Slicer 类不是直接用于前向传播的模块，它的主要功能是作为辅助工具，计算保留 token 的索引
->>>>>>> remotecopy
         raise NotImplementedError
 
 
 class Head(Slicer):
-<<<<<<< HEAD
-    def __init__(self, max_blocks: int, block_mask: torch.Tensor, head_module: nn.Module) -> None:
-        super().__init__(max_blocks, block_mask)
-=======
     # head_module：这是一个 nn.Module，表示要应用到输入张量的神经网络模块，用于对提取的部分进行进一步处理。
     def __init__(self, max_blocks: int, block_mask: torch.Tensor, head_module: nn.Module) -> None:
         super().__init__(max_blocks, block_mask)
         # 检查 head_module 是否为 nn.Module 的实例，以确保传入的是有效的 PyTorch 模块。
->>>>>>> remotecopy
         assert isinstance(head_module, nn.Module)
         self.head_module = head_module
 
     def forward(self, x: torch.Tensor, num_steps: int, prev_steps: int) -> torch.Tensor:
-<<<<<<< HEAD
-=======
         # 提取这些索引对应的张量部分。
->>>>>>> remotecopy
         x_sliced = x[:, self.compute_slice(num_steps, prev_steps)]  # x is (B, T, E)
         return self.head_module(x_sliced)
 
 
-<<<<<<< HEAD
-class Embedder(nn.Module):
-    def __init__(self, max_blocks: int, block_masks: List[torch.Tensor], embedding_tables: List[nn.Embedding]) -> None:
-        super().__init__()
-        assert len(block_masks) == len(embedding_tables)
-        assert (sum(block_masks) == 1).all()  # block mask are a partition of a block
-        self.embedding_dim = embedding_tables[0].embedding_dim
-        assert all([e.embedding_dim == self.embedding_dim for e in embedding_tables])
-        self.embedding_tables = embedding_tables
-        self.slicers = [Slicer(max_blocks, block_mask) for block_mask in block_masks]
-
-    def forward(self, tokens: torch.Tensor, num_steps: int, prev_steps: int) -> torch.Tensor:
-        assert tokens.ndim == 2  # x is (B, T)
-        output = torch.zeros(*tokens.size(), self.embedding_dim, device=tokens.device)
-        for slicer, emb in zip(self.slicers, self.embedding_tables):
-            s = slicer.compute_slice(num_steps, prev_steps)
-            output[:, s] = emb(tokens[:, s])
-=======
 '''
 主要功能：
 这段代码定义了一个 Embedder 类，该类的目的是根据不同的 block_mask 将输入的 token 进行划分，
@@ -145,5 +99,4 @@ class Embedder(nn.Module):
             通过这种方式，output 最终包含了整个序列的嵌入表示，但每个位置的嵌入可能来自不同的嵌入表，具体取决于它们属于哪个块（由 block_masks 决定）。
             这种灵活的处理方式在处理复杂的输入序列（例如包含不同类型的观察值和动作）时非常有用。
             '''
->>>>>>> remotecopy
         return output

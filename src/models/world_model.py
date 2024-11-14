@@ -13,14 +13,10 @@ from .tokenizer import Tokenizer
 from .transformer import Transformer, TransformerConfig
 from utils import init_weights, LossWithIntermediateLosses
 
-<<<<<<< HEAD
-
-=======
 '''
 @dataclass：这是 Python 的装饰器，用于简化类的定义，特别是那些主要用于存储数据的类。
 使用 @dataclass 可以自动生成初始化方法（__init__）、表示方法（__repr__）、比较方法等。
 '''
->>>>>>> remotecopy
 @dataclass
 class WorldModelOutput:
     output_sequence: torch.FloatTensor
@@ -29,28 +25,14 @@ class WorldModelOutput:
     logits_ends: torch.FloatTensor
 
 
-<<<<<<< HEAD
-class WorldModel(nn.Module):
-=======
 class WorldModel(nn.Module):    
     # 该类的初始化方法接收观察值的词汇大小 (obs_vocab_size)、
     # 动作的词汇大小 (act_vocab_size)
     # 以及一个 TransformerConfig 类型的配置对象。TransformerConfig 定义了模型的各种配置参数，比如嵌入维度、最大token数量、块的数量等
->>>>>>> remotecopy
     def __init__(self, obs_vocab_size: int, act_vocab_size: int, config: TransformerConfig) -> None:
         super().__init__()
         self.obs_vocab_size, self.act_vocab_size = obs_vocab_size, act_vocab_size
         self.config = config
-<<<<<<< HEAD
-        self.transformer = Transformer(config)
-
-        all_but_last_obs_tokens_pattern = torch.ones(config.tokens_per_block)
-        all_but_last_obs_tokens_pattern[-2] = 0
-        act_tokens_pattern = torch.zeros(self.config.tokens_per_block)
-        act_tokens_pattern[-1] = 1
-        obs_tokens_pattern = 1 - act_tokens_pattern
-
-=======
         # 实例化一个transformer对象
         self.transformer = Transformer(config)
 
@@ -68,7 +50,6 @@ class WorldModel(nn.Module):
         这个向量表示了序列中每个位置的信息，以便在 Transformer 模型中使用时，模型可以感知到输入的时序信息。
         '''
         # 意味着该嵌入层能够为最多 max_tokens 个不同的位置生成对应的嵌入表示
->>>>>>> remotecopy
         self.pos_emb = nn.Embedding(config.max_tokens, config.embed_dim)
 
         self.embedder = Embedder(
@@ -107,15 +88,10 @@ class WorldModel(nn.Module):
             )
         )
 
-<<<<<<< HEAD
-        self.apply(init_weights)
-
-=======
         # 初始化模型中的所有层的权重
         self.apply(init_weights)
 
     # 打印模型时，会显示出这个字符串
->>>>>>> remotecopy
     def __repr__(self) -> str:
         return "world_model"
 
@@ -125,12 +101,6 @@ class WorldModel(nn.Module):
         assert num_steps <= self.config.max_tokens
         prev_steps = 0 if past_keys_values is None else past_keys_values.size
 
-<<<<<<< HEAD
-        sequences = self.embedder(tokens, num_steps, prev_steps) + self.pos_emb(prev_steps + torch.arange(num_steps, device=tokens.device))
-
-        x = self.transformer(sequences, past_keys_values)
-
-=======
         # 会将 (num_steps, embedding_dim) 自动扩展为形状 (batch_size, num_steps, embedding_dim)，使得加法可以正常进行。
         sequences = self.embedder(tokens, num_steps, prev_steps) + self.pos_emb(prev_steps + torch.arange(num_steps, device=tokens.device))
 
@@ -139,30 +109,10 @@ class WorldModel(nn.Module):
         x = self.transformer(sequences, past_keys_values)
 
         # 计算各个输出头的结果
->>>>>>> remotecopy
         logits_observations = self.head_observations(x, num_steps=num_steps, prev_steps=prev_steps)
         logits_rewards = self.head_rewards(x, num_steps=num_steps, prev_steps=prev_steps)
         logits_ends = self.head_ends(x, num_steps=num_steps, prev_steps=prev_steps)
 
-<<<<<<< HEAD
-        return WorldModelOutput(x, logits_observations, logits_rewards, logits_ends)
-
-    def compute_loss(self, batch: Batch, tokenizer: Tokenizer, **kwargs: Any) -> LossWithIntermediateLosses:
-
-        with torch.no_grad():
-            obs_tokens = tokenizer.encode(batch['observations'], should_preprocess=True).tokens  # (BL, K)
-
-        act_tokens = rearrange(batch['actions'], 'b l -> b l 1')
-        tokens = rearrange(torch.cat((obs_tokens, act_tokens), dim=2), 'b l k1 -> b (l k1)')  # (B, L(K+1))
-
-        outputs = self(tokens)
-
-        labels_observations, labels_rewards, labels_ends = self.compute_labels_world_model(obs_tokens, batch['rewards'], batch['ends'], batch['mask_padding'])
-
-        logits_observations = rearrange(outputs.logits_observations[:, :-1], 'b t o -> (b t) o')
-        loss_obs = F.cross_entropy(logits_observations, labels_observations)
-        loss_rewards = F.cross_entropy(rearrange(outputs.logits_rewards, 'b t e -> (b t) e'), labels_rewards)
-=======
         # 返回最终的输出
         return WorldModelOutput(x, logits_observations, logits_rewards, logits_ends)
 
@@ -201,19 +151,11 @@ class WorldModel(nn.Module):
         # 奖励的交叉熵损失
         loss_rewards = F.cross_entropy(rearrange(outputs.logits_rewards, 'b t e -> (b t) e'), labels_rewards)
         # 结束标志的交叉熵损失
->>>>>>> remotecopy
         loss_ends = F.cross_entropy(rearrange(outputs.logits_ends, 'b t e -> (b t) e'), labels_ends)
 
         return LossWithIntermediateLosses(loss_obs=loss_obs, loss_rewards=loss_rewards, loss_ends=loss_ends)
 
     def compute_labels_world_model(self, obs_tokens: torch.Tensor, rewards: torch.Tensor, ends: torch.Tensor, mask_padding: torch.BoolTensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-<<<<<<< HEAD
-        assert torch.all(ends.sum(dim=1) <= 1)  # at most 1 done
-        mask_fill = torch.logical_not(mask_padding)
-        labels_observations = rearrange(obs_tokens.masked_fill(mask_fill.unsqueeze(-1).expand_as(obs_tokens), -100), 'b t k -> b (t k)')[:, 1:]
-        labels_rewards = (rewards.sign() + 1).masked_fill(mask_fill, -100).long()  # Rewards clipped to {-1, 0, 1}
-        labels_ends = ends.masked_fill(mask_fill, -100)
-=======
         # 确保每个样本最多只能有一个结束信号。对于每个样本（沿 dim=1），ends 的和不能大于 1
         assert torch.all(ends.sum(dim=1) <= 1)  # at most 1 done
         # 通过对 mask_padding 取逻辑反，得到不需要被填充的位置。mask_fill 为 True 的位置代表有效数据，而为 False 的位置表示需要填充
@@ -226,5 +168,4 @@ class WorldModel(nn.Module):
         # 对于 ends 张量中的无效位置，使用 -100 进行填充
         labels_ends = ends.masked_fill(mask_fill, -100)
         # 都展平为一维张量
->>>>>>> remotecopy
         return labels_observations.reshape(-1), labels_rewards.reshape(-1), labels_ends.reshape(-1)
