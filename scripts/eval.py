@@ -22,7 +22,7 @@ def main() -> None:
 
     cmd = f'python src/main.py hydra.run.dir=eval_outputs/{datetime.now().strftime("%Y-%m-%d/%H-%M-%S")} '
 
-    cmd += 'wandb.mode=online '
+    cmd += 'wandb.mode=offline '
     cmd += f'wandb.name=eval-{cfg.wandb.name} '
     cmd += f'wandb.group=eval-{cfg.wandb.group} '
 
@@ -32,7 +32,7 @@ def main() -> None:
     cmd += 'initialization.load_actor_critic=True '
 
     cmd += 'common.epochs=1 '
-    cmd += 'common.device=cuda:0 '
+    cmd += 'common.device=cuda:6 '
     cmd += 'common.do_checkpoint=False '
     cmd += 'common.seed=0 '
 
@@ -46,7 +46,7 @@ def main() -> None:
     cmd += 'evaluation.should=True '
     cmd += 'evaluation.every=1 '
     cmd += 'evaluation.tokenizer.start_after_epochs=1 '
-    cmd += 'evaluation.tokenizer.save_reconstructions=False '
+    cmd += 'evaluation.tokenizer.save_reconstructions=True '
     cmd += 'evaluation.world_model.start_after_epochs=1 '
     cmd += 'evaluation.actor_critic.start_after_epochs=1 '
 
